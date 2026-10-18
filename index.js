@@ -116,8 +116,8 @@ async function buildTranscript(channel) {
 }
 
 const ticketButtons = (claimed = false) => new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setCustomId('ticket_claim').setLabel(claimed ? 'Claimed' : 'Claim').setEmoji('🙋').setStyle(ButtonStyle.Success).setDisabled(claimed),
-  new ButtonBuilder().setCustomId('ticket_close').setLabel('Close Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger),
+  new ButtonBuilder().setCustomId('ticket_claim').setLabel(claimed ? 'Claimed' : 'Claim').setStyle(ButtonStyle.Secondary).setDisabled(claimed),
+  new ButtonBuilder().setCustomId('ticket_close').setLabel('Close').setStyle(ButtonStyle.Secondary),
 );
 
 async function createTicket(i, cfg, reason) {
@@ -141,11 +141,8 @@ async function createTicket(i, cfg, reason) {
   });
 
   const embed = new EmbedBuilder()
-    .setTitle('🎫 Ticket opened')
-    .setDescription('Thanks for reaching out! Describe your issue and staff will be with you shortly.')
-    .addFields({ name: 'Opened by', value: `${i.user}`, inline: true })
-    .setColor(0x57f287).setTimestamp();
-  if (reason) embed.addFields({ name: 'Reason', value: reason.slice(0, 1000) });
+    .setDescription(`Support will be with you shortly.${reason ? `\n\n**Reason**\n${reason.slice(0, 1000)}` : ''}`)
+    .setColor(0x2b2d31);
 
   await channel.send({
     content: `${i.user}${cfg.role ? ` <@&${cfg.role}>` : ''}`,
@@ -157,7 +154,7 @@ async function createTicket(i, cfg, reason) {
 }
 
 async function closeTicket(i, info) {
-  await i.reply('🔒 Closing this ticket in 5 seconds...');
+  await i.reply('Closing this ticket in 5 seconds.');
   const channel = i.channel;
   const payload = { embeds: [new EmbedBuilder().setTitle('Ticket closed').setColor(0xed4245)
     .setDescription(`**${channel.name}** (owner <@${info.owner}>) closed by ${i.user}`).setTimestamp()] };
@@ -180,7 +177,7 @@ client.on('interactionCreate', async (i) => {
         return i.reply({ content: 'Color must be a hex code like `#ff0000`.', flags: EPH });
       }
       const embed = new EmbedBuilder()
-        .setTitle(o.getString('title') ?? '🎫 Support Tickets')
+        .setTitle(o.getString('title') ?? 'Support Tickets')
         .setDescription((o.getString('description') ?? 'Need help? Click the button below to open a ticket.').replace(/\\n/g, '\n'))
         .setColor(colorRaw ? parseInt(colorRaw.replace('#', ''), 16) : 0x5865f2);
       if (o.getString('image')) embed.setImage(o.getString('image'));
@@ -257,9 +254,9 @@ client.on('interactionCreate', async (i) => {
     if (i.isButton() && i.customId === 'ticket_claim') {
       const info = ticketInfo(i.channel);
       if (!info || !isStaff(i.member, info.role)) return i.reply({ content: 'Only staff can claim tickets.', flags: EPH });
-      const embed = EmbedBuilder.from(i.message.embeds[0]).addFields({ name: 'Claimed by', value: `${i.user}`, inline: true });
-      await i.update({ embeds: [embed], components: [ticketButtons(true)] });
-      return i.channel.send(`🙋 ${i.user} will be handling this ticket.`);
+      const old = i.message.embeds[0];
+      const embed = EmbedBuilder.from(old).setDescription(`${old.description}\n\nClaimed by ${i.user}`);
+      return i.update({ embeds: [embed], components: [ticketButtons(true)] });
     }
 
     // Close
