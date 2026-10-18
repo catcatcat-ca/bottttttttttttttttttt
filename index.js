@@ -194,7 +194,7 @@ client.on('interactionCreate', async (i) => {
         }))
         .setLabel(o.getString('button_label') ?? 'Open Ticket')
         .setStyle(STYLES[o.getString('button_color') ?? 'blue']);
-      button.setEmoji(o.getString('button_emoji') ?? '🎫');
+      if (o.getString('button_emoji')) button.setEmoji(o.getString('button_emoji'));
 
       try {
         await i.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
