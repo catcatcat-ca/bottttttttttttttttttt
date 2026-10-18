@@ -1,7 +1,7 @@
 const {
   Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, PermissionFlagsBits,
   ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags,
-  ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, InteractionContextType,
+  ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, InteractionContextType, Events,
 } = require('discord.js');
 
 const { TOKEN, CLIENT_ID, GUILD_ID, SUPPORT_ROLE_ID, TICKET_CATEGORY_ID, LOG_CHANNEL_ID, TRANSCRIPTS } = process.env;
@@ -51,13 +51,21 @@ const commands = [
     .addSubcommand(s => s.setName('close').setDescription('Close this ticket')),
 ].map(c => c.toJSON());
 
-client.once('clientReady', async () => {
+client.once(Events.ClientReady, async () => {
+  console.log(`Logged in as ${client.user.tag}, registering commands...`);
   const rest = new REST().setToken(TOKEN);
-  await rest.put(
-    GUILD_ID ? Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID) : Routes.applicationCommands(CLIENT_ID),
-    { body: commands },
-  );
-  console.log(`Logged in as ${client.user.tag}, commands registered.`);
+  try {
+    if (GUILD_ID) {
+      // Remove any old global commands so stale ones disappear.
+      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
+      await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+    } else {
+      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    }
+    console.log('Commands registered successfully.');
+  } catch (err) {
+    console.error('COMMAND REGISTRATION FAILED:', err.rawError ?? err);
+  }
 });
 
 /* ---------------- Helpers ---------------- */
